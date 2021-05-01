@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# Author:				Action <ahmed@action-server.com>
-# License:			GNU GPLv3
-# Description:	Change keyboard layout
+# Author:       Action <dev@action-server.com>
+# License:      GNU GPLv3
+# Description:  Change keyboard layout
 
 # Prepare
 MAIN_LAYOUT=eu
