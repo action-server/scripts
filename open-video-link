@@ -4,6 +4,9 @@
 # License:      GNU GPLv3
 # Description:  Open video link with youtube-dl and mpv
 
+# Set script name
+NAME="$(basename $0)"
+
 check_dependency(){
 	dep_missing=0
 	for x in "$@"; do
@@ -18,18 +21,19 @@ check_dependency(){
 	fi
 }
 
-prepare(){
-	# Set script name
-	NAME="$(basename $0)"
-
+prepare_browser(){
 	# Set correct browser
 	if [ "$PRIVATE_BROWSER" ]; then
 		browser="$PRIVATE_BROWSER"
-	elif [ "$BROWSER" ]; then
-		browser="$BROWSER"
-	else
-		browser="$(basename "$(xdg-mime query default text/html)" .desktop)"
+		return
 	fi
+
+	if [ "$BROWSER" ]; then
+		browser="$BROWSER"
+		return
+	fi
+
+	browser="$(basename $(xdg-mime query default text/html) .desktop)"
 }
 
 get_video_quality(){
@@ -50,11 +54,12 @@ get_video_quality(){
 
 open_browser(){
 	# Open using window manager if available
-	if which i3 >/dev/null 2>&1; then
-		i3-msg "exec --no-startup-id $browser $1" >/dev/null 2>&1 &
-	else
-		nohup "$browser" -- "$1" >/dev/null 2>&1 &
+	if ! which i3 >/dev/null 2>&1; then
+		"$browser" -- "$1" >/dev/null 2>&1 &
+		return
 	fi
+
+	i3-msg "exec --no-startup-id $browser $1" >/dev/null 2>&1 &
 }
 
 run(){
@@ -67,21 +72,21 @@ run(){
 	esac
 
 	if [ -z "$quality" ]; then
-		echo 'quality not selected' >&2
+		echo 'Selected option invalid' >&2
 		return 1
 	fi
 
-	message="$(mpv --hwdec=auto --ytdl-format=$quality+bestaudio/best --af=scaletempo2 $1)"
+	command_output="$(mpv --hwdec=auto --ytdl-format=$quality+bestaudio/best --af=scaletempo2 $1)"
 
 	if [ "$?" != '0' ]; then
-		notify-send 'Error' "$message"
+		notify-send 'Error' "$command_output"
 	fi
 }
 
 
 main(){
-	check_dependency 'mpv' 'youtube-dl' 'dmenu' 'xdg-open'
-	prepare "$@"
+	check_dependency 'mpv' 'yt-dlp' 'dmenu' 'xdg-open'
+	prepare_browser "$@"
 	run "$@"
 }
 

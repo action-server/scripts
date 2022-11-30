@@ -6,7 +6,9 @@
 
 if pgrep screenkey; then
 	pkill screenkey
+	notify-send 'Screenkey' 'off'
 	return
 fi
 
-screenkey --font-size small --opacity 0.5 --persist --compr-cnt 1
+screenkey --font-size small --opacity 0.5 --persist --compr-cnt 1 &
+notify-send 'Screenkey' 'on'

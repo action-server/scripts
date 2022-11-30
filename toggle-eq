@@ -6,7 +6,9 @@
 
 if pgrep -x easyeffects; then
 	pkill easyeffects
+	notify-send 'EQ' 'off'
 	return
 fi
 
-easyeffects --gapplication-service
+easyeffects --gapplication-service &
+notify-send 'EQ' 'on'

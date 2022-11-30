@@ -10,9 +10,9 @@ SEC_LAYOUT=ara
 
 if setxkbmap -query | grep -q "^layout:\s*$MAIN_LAYOUT"; then
 	setxkbmap -layout $SEC_LAYOUT
-	echo $SEC_LAYOUT
+	notify-send 'Keyboard Layout' "${SEC_LAYOUT}"
 	return
 fi
 
 setxkbmap -layout $MAIN_LAYOUT
-echo $MAIN_LAYOUT
+notify-send 'Keyboard Layout' "${MAIN_LAYOUT}"

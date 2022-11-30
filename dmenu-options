@@ -7,6 +7,7 @@
 script="$(\
 	cat <<- EOF | dmenu -i -l 10
 	toggle-compositor
+	toggle-night-light
 	toggle-eq
 	toggle-screenkey
 	weather

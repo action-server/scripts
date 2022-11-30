@@ -6,7 +6,9 @@
 
 if pgrep -x xcompmgr; then
 	pkill xcompmgr
+	notify-send 'Compositor' 'off'
 	return
 fi
 
-xcompmgr -c -C -t-5 -l-5 -r4.2 -o.55
+xcompmgr -c -C -t-5 -l-5 -r4.2 -o.55 &
+notify-send 'Compositor' 'on'
