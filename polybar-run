@@ -1,17 +1,24 @@
 #!/bin/sh
 
-# Terminate already running bar instances
-polybar-msg cmd quit
+set -e
+
+# Terminate already running polybar instances
+polybar-msg cmd quit || true
 
 primary_monitor="$(polybar --list-monitors | grep '^.*(primary)$' | cut -d ':' -f 1)"
-other_monitors="$(polybar --list-monitors | grep -v '^'"$primary_monitor"':' | cut -d ':' -f 1)"
+other_monitors="$(polybar --list-monitors | grep -v '^'"${primary_monitor}"':' | cut -d ':' -f 1)"
 
 # Launch bar on primary monitor
-MONITOR="$primary_monitor" TRAY_POSITION='right' polybar --reload &
+MONITOR="${primary_monitor}" TRAY_POSITION='right' polybar --reload &
+
+# check other monitors available
+if [ -z "${other_monitors}" ]; then
+	return
+fi
 
 # Launch bars on other monitors
-for m in $other_monitors; do
-	MONITOR=$m TRAY_POSITION='none' polybar --reload &
+for monitor in ${other_monitors}; do
+	MONITOR="${monitor}" polybar --reload &
 done
 
 echo "Bars launched..."

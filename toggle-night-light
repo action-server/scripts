@@ -5,6 +5,7 @@
 # Description:  Toggle night light
 
 if pgrep redshift; then
+	redshift -x
 	pkill redshift
 	notify-send 'Night Light' 'off'
 	return

@@ -1,11 +1,31 @@
 #!/bin/sh
 
+set -e
+
 export DISPLAY=:0
-export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export XDG_RUNTIME_DIR=/run/user/"$(id -u)"
+export XAUTHORITY="${XDG_RUNTIME_DIR}/Xauthority"
 
-capacity="$(cat /sys/class/power_supply/BAT0/capacity)"
-charging_status="$(cat /sys/class/power_supply/BAT0/status)"
+update_status(){
+	capacity="$(cat /sys/class/power_supply/BAT0/capacity)"
+	charging_status="$(cat /sys/class/power_supply/BAT0/status)"
+}
 
-if [ "$capacity" -lt '5' ] && [ "$charging_status" = 'Discharging' ]; then
+handle_low_power(){
+	if [ "$charging_status" != 'Discharging' ];then
+		return
+	fi
+
+	if [ "$capacity" -gt '25' ]; then
+		return
+	fi
+
 	notify-send 'Battery low' -u critical
-fi
+}
+
+main(){
+	update_status
+	handle_low_power
+}
+
+main "${@}"

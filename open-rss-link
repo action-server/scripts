@@ -4,58 +4,122 @@
 # License:      GNU GPLv3
 # Description:  Open rss link
 
-# Set script name
-NAME="$(basename $0)"
+set -e
+
+SCRIPT_NAME="$(basename "${0}")"
+
+print_error_gui(){
+	notify-send --app-name=''"${SCRIPT_NAME}"' - Error' ''"${message}"''
+}
+
+print_error(){
+	message="${1}"
+	printf '%s\n%s' ''"${SCRIPT_NAME}"' - Error' ''"${message}"'' >&2
+
+	if [ -z "${DISPLAY}" ] ;then
+		return
+	fi
+
+	print_error_gui
+}
 
 check_arguments(){
-	# Check arguments
-	if [ -z "$1" ]; then
-		printf "Usage: $NAME <link>" >&2
-		exit 1
+	if [ -z "${1}" ]; then
+		print_error 'Usage: '"${SCRIPT_NAME}"' <link>'
+		return 1
 	fi
 }
 
-prepare_browser(){
-	# Set correct browser
-	if [ "$PRIVATE_BROWSER" ]; then
-		browser="$PRIVATE_BROWSER"
-		return
-	fi
-
-	if [ "$BROWSER" ]; then
-		browser="$BROWSER"
-		return
-	fi
-
-	browser="$(basename $(xdg-mime query default text/html) .desktop)"
+get_native_resolution(){
+	native_resolution="$(xrandr --current | grep '*' | awk '{print $1; exit}' | cut -d 'x' -f2)"
 }
 
-open_video(){
-	open-video-link "$1" >/dev/null 2>&1 &
+get_media_quality(){
+	quality_choice="$( \
+	cat <<-'EOF' | dmenu -p 'Choose media quality' -i -l 10
+	Best
+	Native
+	2160p 4k
+	1440p 2k
+	1080p Full HD
+	720p HD
+	480p SD
+	360p
+	240p
+	144p
+	EOF
+	)"
+
+	case "${quality_choice}" in
+		'Native') get_native_resolution; quality="${native_resolution}";;
+		'Best') quality='Best';;
+		'2160p 4k') quality='2160';;
+		'1440p 2k') quality='1440';;
+		'1080p Full HD') quality='1080';;
+		'720p HD') quality='720';;
+		'480p SD') quality='480';;
+		'360p') quality='360';;
+		'240p') quality='240';;
+		'144p') quality='144';;
+		*) get_media_quality;;
+	esac
 }
 
-open_browser(){
-	# Open using window manager if available
-	if ! which i3 >/dev/null 2>&1; then
-		"$browser" -- "$1" >/dev/null 2>&1 &
-		return
+open_with_audio_player(){
+	link="${1}"
+
+	mpv --ytdl-format='bestaudio' "${link}"
+}
+
+open_with_video_player(){
+	link="${1}"
+
+	get_media_quality
+
+	ytdl_format='
+	bestvideo[height<='"${quality}"']+bestaudio / 
+	best[height<='"${quality}"'] / 
+	worstvideo+bestaudio / 
+	worst'
+
+	if [ "${quality}" = 'Best' ]; then 
+		ytdl_format='best'
 	fi
 
-	i3-msg "exec --no-startup-id $browser $1" >/dev/null 2>&1 &
+	mpv --ytdl-format="${ytdl_format}" "${link}"
+}
+
+open_with_browser(){
+	link="${1}"
+	"${BROWSER}" "${link}"
+}
+
+get_media_player(){
+	media_player="$( \
+		cat <<-'EOF' | dmenu -p 'Choose' -i
+	Browser
+	Video
+	Audio
+	EOF
+	)"
 }
 
 run(){
-	case "$1" in
-		*youtube.com/watch\?v=*) open_video "$1";;
-		*odysee.com/@*/*) open_video "$1";;
-		*) open_browser "$1";;
+	link="${1}"
+
+	get_media_player
+
+	case "${media_player}" in
+		'Browser') open_with_browser "${link}";;
+		'Video') open_with_video_player "${link}";;
+		'Audio') open_with_audio_player "${link}";;
+		*) run "${link}";;
 	esac
 }
 
 main(){
-	check_arguments "$@"
-	prepare_browser "$@"
-	run "$@"
+	check_arguments "${@}"
+	run "${@}"
 }
 
-main "$@"
+main "${@}"
