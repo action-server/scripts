@@ -1,0 +1,91 @@
+#!/bin/sh
+
+set -e
+script_name="$(basename "${0}")"
+
+print_error(){
+	message="${1}"
+	printf '%s\n' "Error: ${message}" >&2
+}
+
+get_theme(){
+	if [ "$#" -ne '1' ]; then
+		print_error "Usage: ${script_name} <light|dark>"
+		return 1
+	fi
+
+	theme="${1}"
+}
+
+set_theme(){
+	case "${theme}" in
+		'light')
+			set_gtk3_theme 'Adwaita'
+			set_gtk3_icon_theme 'McMojave-circle-light'
+			set_flatpak_theme 'Adwaita'
+			set_polybar_theme 'gruvbox-light'
+			set_alacritty_theme 'gruvbox-light'
+			set_neovim_theme 'light'
+			;;
+		'dark')
+			set_gtk3_theme 'Adwaita-dark'
+			set_gtk3_icon_theme 'McMojave-circle-dark'
+			set_flatpak_theme 'Adwaita-dark'
+			set_polybar_theme 'gruvbox-dark'
+			set_alacritty_theme 'gruvbox-dark'
+			set_neovim_theme 'dark'
+			;;
+		*)
+			print_error "Usage: ${script_name} <light|dark>"
+			return 1
+			;;
+	esac
+}
+
+set_gtk3_theme(){
+	theme="${1}"
+
+	sed -i.bak "s/^gtk-theme-name=.*\$/gtk-theme-name=${theme}/" "${XDG_CONFIG_HOME}/gtk-3.0/settings.ini"
+}
+
+set_gtk3_icon_theme(){
+	theme="${1}"
+
+	sed -i.bak "s/^gtk-icon-theme-name=.*\$/gtk-icon-theme-name=${theme}/" "${XDG_CONFIG_HOME}/gtk-3.0/settings.ini"
+}
+
+set_flatpak_theme(){
+	theme="${1}"
+
+	sed -i.bak "s/^GTK_THEME=.*\$/GTK_THEME=${theme}/" "${XDG_DATA_HOME}/flatpak/overrides/global"
+}
+
+set_polybar_theme(){
+	theme="${1}"
+
+	cat <<-EOF > "${XDG_CONFIG_HOME}/polybar/theme.ini"
+		include-file = ~/.config/polybar/themes/${theme}.ini
+	EOF
+}
+
+set_alacritty_theme(){
+	theme="${1}"
+
+	cat <<-EOF > "${XDG_CONFIG_HOME}/alacritty/theme.yml"
+		import:
+			- ~/.config/alacritty/themes/${theme}.yml
+	EOF
+}
+
+set_neovim_theme(){
+	theme="${1}"
+
+	sed -i.bak "s/^set background=.*\$/set background=${theme}/" "${XDG_CONFIG_HOME}/nvim/init.vim"
+}
+
+main(){
+	get_theme "${@}"
+	set_theme
+}
+
+main "${@}"

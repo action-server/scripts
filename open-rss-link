@@ -5,16 +5,17 @@
 # Description:  Open rss link
 
 set -e
+script_name="$(basename "${0}")"
 
-SCRIPT_NAME="$(basename "${0}")"
+trap 'cleanup' EXIT INT QUIT TERM HUP
 
 print_error_gui(){
-	notify-send --app-name=''"${SCRIPT_NAME}"' - Error' ''"${message}"''
+	notify-send --app-name="${script_name}" "Error ${message}"
 }
 
 print_error(){
 	message="${1}"
-	printf '%s\n%s' ''"${SCRIPT_NAME}"' - Error' ''"${message}"'' >&2
+	printf '%s\n' "Error: ${message}" >&2
 
 	if [ -z "${DISPLAY}" ] ;then
 		return
@@ -23,9 +24,21 @@ print_error(){
 	print_error_gui
 }
 
+cleanup(){
+	if [ "${?}" -eq 0 ]; then
+		return
+	fi
+
+	if [ -z "${command_output}" ]; then
+		return
+	fi
+
+	print_error "${command_output}"
+}
+
 check_arguments(){
-	if [ -z "${1}" ]; then
-		print_error 'Usage: '"${SCRIPT_NAME}"' <link>'
+	if [ "${#}" -ne 1 ]; then
+		print_error "Usage: ${script_name} <link>"
 		return 1
 	fi
 }
@@ -68,7 +81,7 @@ get_media_quality(){
 open_with_audio_player(){
 	link="${1}"
 
-	mpv --ytdl-format='bestaudio' "${link}"
+	command_output="$(mpv --ytdl-format='bestaudio' "${link}")"
 }
 
 open_with_video_player(){
@@ -86,12 +99,12 @@ open_with_video_player(){
 		ytdl_format='best'
 	fi
 
-	mpv --ytdl-format="${ytdl_format}" "${link}"
+	command_output="$(mpv --ytdl-format="${ytdl_format}" "${link}")"
 }
 
 open_with_browser(){
 	link="${1}"
-	"${BROWSER}" "${link}"
+	command_output="$("${BROWSER}" "${link}")"
 }
 
 get_media_player(){

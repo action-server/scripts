@@ -1,24 +1,46 @@
 #!/bin/sh
 
+# Author:       Action <dev@action-server.com>
+# License:      GNU GPLv3
+# Description:  Launch polybar in multihead setup
+
 set -e
 
-# Terminate already running polybar instances
-polybar-msg cmd quit || true
+setup(){
+	# Terminate already running polybar instances
+	polybar-msg cmd quit || true
 
-primary_monitor="$(polybar --list-monitors | grep '^.*(primary)$' | cut -d ':' -f 1)"
-other_monitors="$(polybar --list-monitors | grep -v '^'"${primary_monitor}"':' | cut -d ':' -f 1)"
+	# Query monitors
+	primary_monitor="$(polybar --list-monitors | grep '^.*(primary)$' | cut -d ':' -f 1)"
+	other_monitors="$(polybar --list-monitors | grep -v '^'"${primary_monitor}"':' | cut -d ':' -f 1)"
+}
 
-# Launch bar on primary monitor
-MONITOR="${primary_monitor}" TRAY_POSITION='right' polybar --reload &
+launch_primary_monitor(){
+	# Check primary monitor is available
+	if [ -z "${primary_monitor}" ]; then
+		return
+	fi
 
-# check other monitors available
-if [ -z "${other_monitors}" ]; then
-	return
-fi
+	# Launch bar on primary monitor
+	MONITOR="${primary_monitor}" TRAY_POSITION='right' polybar --reload &
+}
 
-# Launch bars on other monitors
-for monitor in ${other_monitors}; do
-	MONITOR="${monitor}" polybar --reload &
-done
+launch_other_monitors(){
+	# check other monitors are available
+	if [ -z "${other_monitors}" ]; then
+		return
+	fi
 
-echo "Bars launched..."
+	# Launch bars on other monitors
+	for monitor in ${other_monitors}; do
+		MONITOR="${monitor}" polybar --reload &
+	done
+}
+
+main(){
+	setup
+	launch_primary_monitor
+	launch_other_monitors
+}
+
+main "${@}"

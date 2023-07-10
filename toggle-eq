@@ -5,6 +5,7 @@
 # Description:  Toggle audio EQ
 
 if pgrep -x easyeffects; then
+	easyeffects -q
 	pkill easyeffects
 	notify-send 'EQ' 'off'
 	return
