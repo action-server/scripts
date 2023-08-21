@@ -6,21 +6,19 @@
 
 set -e
 script_name="$(basename "${0}")"
-
 trap 'cleanup' EXIT INT QUIT TERM HUP
 
 print_error_gui(){
+	if [ -z "${DISPLAY}" ] ;then
+		return
+	fi
+
 	notify-send --app-name="${script_name}" "Error ${message}"
 }
 
 print_error(){
 	message="${1}"
 	printf '%s\n' "Error: ${message}" >&2
-
-	if [ -z "${DISPLAY}" ] ;then
-		return
-	fi
-
 	print_error_gui
 }
 
@@ -44,7 +42,12 @@ check_arguments(){
 }
 
 get_native_resolution(){
-	native_resolution="$(xrandr --current | grep '*' | awk '{print $1; exit}' | cut -d 'x' -f2)"
+	native_resolution="$(\
+		xrandr --current \
+		| grep '*' \
+		| awk '{print $1; exit}' \
+		| cut -d 'x' -f2 \
+		)"
 }
 
 get_media_quality(){
@@ -80,13 +83,11 @@ get_media_quality(){
 
 open_with_audio_player(){
 	link="${1}"
-
 	command_output="$(mpv --ytdl-format='bestaudio' "${link}")"
 }
 
 open_with_video_player(){
 	link="${1}"
-
 	get_media_quality
 
 	ytdl_format='

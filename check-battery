@@ -11,11 +11,11 @@ export XAUTHORITY="${XDG_RUNTIME_DIR}/Xauthority"
 
 update_status(){
 	capacity="$(cat /sys/class/power_supply/BAT0/capacity)"
-	charging_status="$(cat /sys/class/power_supply/BAT0/status)"
+	charging_status="$(cat /sys/class/power_supply/AC/online)"
 }
 
 handle_high_power(){
-	if [ "${capacity}" -lt "${BATTERY_LOW_PERCENTAGE}" ]; then
+	if [ "${capacity}" -le "${BATTERY_LOW_PERCENTAGE}" ]; then
 		return
 	fi
 
@@ -27,7 +27,7 @@ handle_high_power(){
 }
 
 handle_low_power(){
-	if [ "${charging_status}" != 'Discharging' ];then
+	if [ "${charging_status}" -eq '1' ];then
 		return
 	fi
 
