@@ -4,6 +4,7 @@ set -e
 
 BATTERY_LOW_FILE='/tmp/check-battery_low.tmp'
 BATTERY_LOW_PERCENTAGE='25'
+BATTERY_CRITICAL_PERCENTAGE='10'
 
 export DISPLAY=':0'
 export XDG_RUNTIME_DIR=/run/user/"$(id -u)"
@@ -19,11 +20,7 @@ handle_high_power(){
 		return
 	fi
 
-	if [ ! -f "${BATTERY_LOW_FILE}" ]; then
-		return
-	fi
-
-	rm "${BATTERY_LOW_FILE}"
+	rm -f "${BATTERY_LOW_FILE}"
 }
 
 handle_low_power(){
@@ -41,7 +38,19 @@ handle_low_power(){
 
 	touch "${BATTERY_LOW_FILE}"
 
-	notify-send 'Battery low' -u critical
+	notify-send 'Battery' 'Power low' -u critical
+}
+
+handle_critical_power(){
+	if [ "${charging_status}" -eq '1' ];then
+		return
+	fi
+
+	if [ "${capacity}" -gt "${BATTERY_CRITICAL_PERCENTAGE}" ]; then
+		return
+	fi
+
+	notify-send 'Battery' 'Power critical' -u critical
 }
 
 main(){
@@ -50,6 +59,8 @@ main(){
 	handle_high_power
 
 	handle_low_power
+
+	handle_critical_power
 }
 
 main "${@}"

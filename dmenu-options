@@ -10,6 +10,7 @@ script="$(\
 	toggle-night-light
 	toggle-eq
 	toggle-screenkey
+	toggle-keyboard-layout
 	weather
 EOF
 )"

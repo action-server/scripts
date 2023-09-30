@@ -1,0 +1,38 @@
+#!/bin/sh
+
+set -e
+
+print_error(){
+	message="${1}"
+	printf '%s\n' "Error: ${message}" >&2
+}
+
+check_root(){
+	if [ "$(id -u)" -ne '0' ]; then
+		return 1
+	fi
+}
+
+install_from_backup(){
+	backup="${1}"
+
+	if ! check_root; then
+		print_error 'Run with root'
+		return 1
+	fi
+
+	if [ ! -f "${backup}" ]; then
+		print_error "\"${backup}\" is not a file"
+		return 1
+	fi
+
+	formatted_backup="$(cat "${backup}" | cut -d ',' -f 1 | tr -d '"' | tr '\n' ' ')"
+
+	sh -c "pacman -S --needed ${formatted_backup}"
+}
+
+main(){
+	install_from_backup "${@}"
+}
+
+main "${@}"
