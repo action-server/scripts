@@ -4,13 +4,20 @@
 # License:      GNU GPLv3
 # Description:  Check weather
 
+set -e
+WEATHER_SERVICE_URL='https://wttr.in'
+
 get_locaiton(){
-	# If "$DISPLAY" not set read stdin instead
+	if [ -z "${DISPLAY}" ]; then
+		read -r location
+		return
+	fi
+
 	location="$(printf '' | dmenu -p 'Enter location' -i -l 5)"
 }
 
 run(){
-	"$TERMINAL" -e sh -c 'curl -L https://wttr.in/'"${location}"' && sleep 1000000'
+	curl -L "${WEATHER_SERVICE_URL}/${location}?n"
 }
 
 main(){

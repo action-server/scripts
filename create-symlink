@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Author:       Action <dev@action-server.com>
+# License:      GNU GPLv3
+# Description:  Create symbolic links recursively
+
 set -e
 
 IFS='

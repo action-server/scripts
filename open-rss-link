@@ -8,6 +8,9 @@ set -e
 script_name="$(basename "${0}")"
 trap 'cleanup' EXIT INT QUIT TERM HUP
 
+PREVIOUS_CHOICE_DIRECTORY="${XDG_CACHE_HOME:-$HOME/.cache}/script"
+PREVIOUS_CHOICE_FILE="${PREVIOUS_CHOICE_DIRECTORY}/${script_name}.db"
+
 print_error_gui(){
 	if [ -z "${DISPLAY}" ] ;then
 		return
@@ -23,7 +26,9 @@ print_error(){
 }
 
 cleanup(){
-	if [ "${?}" -eq 0 ]; then
+	command_return_code="${?}"
+
+	if [ "${command_return_code}" -eq 0 ]; then
 		return
 	fi
 
@@ -35,40 +40,41 @@ cleanup(){
 }
 
 check_arguments(){
-	if [ "${#}" -ne 1 ]; then
+	argument_count="${#}"
+
+	if [ "${argument_count}" -ne 1 ]; then
 		print_error "Usage: ${script_name} <link>"
 		return 1
 	fi
 }
 
-get_native_resolution(){
-	native_resolution="$(\
-		xrandr --current \
-		| grep '*' \
-		| awk '{print $1; exit}' \
-		| cut -d 'x' -f2 \
-		)"
-}
+get_ytdl_format(){
+	while [ -z "${quality_choice}" ]; do
+		options=$(\
+			cat <<-EOF 
+			Default
+			2160p 4k
+			1440p 2k
+			1080p Full HD
+			720p HD
+			480p SD
+			360p
+			240p
+			144p
+			EOF
+		)
 
-get_media_quality(){
-	quality_choice="$( \
-	cat <<-'EOF' | dmenu -p 'Choose media quality' -i -l 10
-	Best
-	Native
-	2160p 4k
-	1440p 2k
-	1080p Full HD
-	720p HD
-	480p SD
-	360p
-	240p
-	144p
-	EOF
-	)"
+		quality_choice="$(\
+			printf '%s' "${options}" | 
+			dmenu -p 'Choose video format' -i -l 10)"
+
+		if ! printf '%s' "${options}" | grep -q "^${quality_choice}\$"; then
+			unset quality_choice
+		fi
+	done
 
 	case "${quality_choice}" in
-		'Native') get_native_resolution; quality="${native_resolution}";;
-		'Best') quality='Best';;
+		'Default') quality='best';;
 		'2160p 4k') quality='2160';;
 		'1440p 2k') quality='1440';;
 		'1080p Full HD') quality='1080';;
@@ -77,7 +83,20 @@ get_media_quality(){
 		'360p') quality='360';;
 		'240p') quality='240';;
 		'144p') quality='144';;
-		*) get_media_quality;;
+		*) unset quality_choice;;
+	esac
+
+	case "${quality}" in
+		'best')
+			ytdl_format="${quality}"
+			;;
+		*)
+			ytdl_format='
+			bestvideo[height<='"${quality}"']+bestaudio / 
+			best[height<='"${quality}"'] / 
+			worstvideo+bestaudio / 
+			worst'
+			;;
 	esac
 }
 
@@ -88,52 +107,107 @@ open_with_audio_player(){
 
 open_with_video_player(){
 	link="${1}"
-	get_media_quality
-
-	ytdl_format='
-	bestvideo[height<='"${quality}"']+bestaudio / 
-	best[height<='"${quality}"'] / 
-	worstvideo+bestaudio / 
-	worst'
-
-	if [ "${quality}" = 'Best' ]; then 
-		ytdl_format='best'
-	fi
+	get_ytdl_format
 
 	command_output="$(mpv --ytdl-format="${ytdl_format}" "${link}")"
 }
 
 open_with_browser(){
 	link="${1}"
-	command_output="$("${BROWSER}" "${link}")"
+	command_output="$(sh -c "${BROWSER} ${link}")"
+}
+
+open_with_previous_choice(){
+	link="${1}"
+	media_player="${previous_media_player}"
+	quality_choice="${previous_quality_choice}"
+
+	open_with_media_player "${link}"
+}
+
+get_previous_choice(){
+	if [ ! -f "${PREVIOUS_CHOICE_FILE}" ]; then
+		return
+	fi
+
+	previous_choice="$(cat "${PREVIOUS_CHOICE_FILE}")"
+
+	previous_media_player="$(\
+		printf '%s' "${previous_choice}" | 
+		grep 'media_player' | 
+		cut -d '=' -f 2)"
+
+	previous_quality_choice="$(\
+		printf '%s' "${previous_choice}" | 
+		grep 'quality_choice' | 
+		cut -d '=' -f 2)"
+
+	if [ -z "${previous_media_player}" ]; then
+		return
+	fi
+
+	previous_choice="(${previous_media_player})"
+
+	if [ -z "${previous_quality_choice}" ]; then
+		return
+	fi
+
+	previous_choice="(${previous_media_player} -> ${previous_quality_choice})"
 }
 
 get_media_player(){
-	media_player="$( \
-		cat <<-'EOF' | dmenu -p 'Choose' -i
-	Browser
-	Video
-	Audio
-	EOF
-	)"
+	options=$(\
+		cat <<-EOF 
+		${previous_choice}
+		Browser
+		Video
+		Audio
+		EOF
+	)
+
+	options="$(printf '%s' "${options}" | sed '/^$/d')"
+
+	while [ -z "${media_player}" ]; do
+		media_player="$(printf '%s' "${options}" | dmenu -p 'Choose' -i)"
+
+		if ! printf '%s' "${options}" | grep -q "^${media_player}\$"; then
+			unset media_player
+		fi
+	done
 }
 
-run(){
+open_with_media_player(){
 	link="${1}"
-
-	get_media_player
 
 	case "${media_player}" in
 		'Browser') open_with_browser "${link}";;
 		'Video') open_with_video_player "${link}";;
 		'Audio') open_with_audio_player "${link}";;
-		*) run "${link}";;
+		"${previous_choice}") open_with_previous_choice "${link}";;
 	esac
 }
 
+set_previous_choice(){
+	mkdir -p "${PREVIOUS_CHOICE_DIRECTORY}"
+
+	cat <<-EOF > "${PREVIOUS_CHOICE_FILE}"
+		media_player=${media_player}
+		quality_choice=${quality_choice}
+	EOF
+}
+
 main(){
+	link="${1}"
+
 	check_arguments "${@}"
-	run "${@}"
+
+	get_previous_choice
+
+	get_media_player
+
+	open_with_media_player "${link}"
+
+	set_previous_choice
 }
 
 main "${@}"

@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Author:       Action <dev@action-server.com>
+# License:      GNU GPLv3
+# Description:  Emoji selector
+
+set -e
+
 choice="$(\
 	cat <<-'EOF' | dmenu -p 'Type emote name' -i -l 10 | cut -d ',' -f 1
 		( ͡° ͜ʖ ͡°), "Lenny"

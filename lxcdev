@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Author:       Action <dev@action-server.com>
+# License:      GNU GPLv3
+# Description:  Run command inside lxc container
+
+set -e
+
+CONTAINER_NAME='dev'
+CONTAINER_USER_NAME='dev'
+WORKDIR="$(pwd)"
+COMMANDS="${@}"
+
+lxc exec "${CONTAINER_NAME}" -- \
+	su --pty \
+	--login "${CONTAINER_USER_NAME}" \
+	--command "cd /mnt${WORKDIR} && ${COMMANDS}"

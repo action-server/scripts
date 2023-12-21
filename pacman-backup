@@ -1,6 +1,13 @@
 #!/bin/sh
 
+# Author:       Action <dev@action-server.com>
+# License:      GNU GPLv3
+# Description:  Open rss link
+
 set -e
+
+script_name="$(basename "${0}")"
+
 
 print_error(){
 	message="${1}"
@@ -32,6 +39,11 @@ install_from_backup(){
 }
 
 main(){
+	if [ "${#}" -ne 1 ]; then
+		print_error "Usage: ${script_name} <file>"
+		return 1
+	fi
+
 	install_from_backup "${@}"
 }
 
