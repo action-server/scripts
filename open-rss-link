@@ -91,29 +91,34 @@ get_ytdl_format(){
 			ytdl_format="${quality}"
 			;;
 		*)
-			ytdl_format='
-			bestvideo[height<='"${quality}"']+bestaudio / 
-			best[height<='"${quality}"'] / 
-			worstvideo+bestaudio / 
-			worst'
+			ytdl_format="
+			bestvideo[height<=${quality}]+bestaudio/
+			best[height<=${quality}]/
+			worstvideo+bestaudio/
+			worst"
 			;;
 	esac
 }
 
 open_with_audio_player(){
 	link="${1}"
+	set_previous_choice
+
 	command_output="$(mpv --ytdl-format='bestaudio' "${link}")"
 }
 
 open_with_video_player(){
 	link="${1}"
 	get_ytdl_format
+	set_previous_choice
 
 	command_output="$(mpv --ytdl-format="${ytdl_format}" "${link}")"
 }
 
 open_with_browser(){
 	link="${1}"
+	set_previous_choice
+
 	command_output="$(sh -c "${BROWSER} ${link}")"
 }
 
@@ -205,9 +210,9 @@ main(){
 
 	get_media_player
 
-	open_with_media_player "${link}"
-
 	set_previous_choice
+
+	open_with_media_player "${link}"
 }
 
 main "${@}"

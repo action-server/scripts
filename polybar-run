@@ -22,7 +22,7 @@ launch_primary_monitor(){
 	fi
 
 	# Launch bar on primary monitor
-	MONITOR="${primary_monitor}" TRAY_POSITION='right' polybar --reload &
+	MONITOR="${primary_monitor}" polybar --reload &
 }
 
 launch_other_monitors(){
@@ -33,7 +33,7 @@ launch_other_monitors(){
 
 	# Launch bars on other monitors
 	for monitor in ${other_monitors}; do
-		MONITOR="${monitor}" polybar --reload &
+		MONITOR="${monitor}" TRAY='none' polybar --reload &
 	done
 }
 
