@@ -11,7 +11,7 @@ CONTAINER_USER_NAME='dev'
 WORKDIR="$(pwd)"
 COMMANDS="${@}"
 
-lxc exec "${CONTAINER_NAME}" -- \
+incus exec "${CONTAINER_NAME}" -- \
 	su --pty \
 	--login "${CONTAINER_USER_NAME}" \
 	--command "cd /mnt${WORKDIR} && ${COMMANDS}"
