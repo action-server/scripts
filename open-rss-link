@@ -74,7 +74,7 @@ get_ytdl_format(){
 	done
 
 	case "${quality_choice}" in
-		'Default') quality='best';;
+		'Default') quality='';;
 		'2160p 4k') quality='2160';;
 		'1440p 2k') quality='1440';;
 		'1080p Full HD') quality='1080';;
@@ -87,7 +87,7 @@ get_ytdl_format(){
 	esac
 
 	case "${quality}" in
-		'best')
+		'')
 			ytdl_format="${quality}"
 			;;
 		*)
