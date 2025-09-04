@@ -11,7 +11,33 @@ CONTAINER_USER_NAME='dev'
 WORKDIR="$(pwd)"
 COMMANDS="${@}"
 
-incus exec "${CONTAINER_NAME}" -- \
-	su --pty \
-	--login "${CONTAINER_USER_NAME}" \
-	--command "cd /mnt${WORKDIR} && ${COMMANDS}"
+mount_disk(){
+	incus config device add \
+		"${CONTAINER_NAME}" "${WORKDIR}" disk \
+		source="${WORKDIR}" \
+		path="/mnt${WORKDIR}" \
+		shift=true \
+		--quiet
+}
+
+run_command(){
+	incus exec "${CONTAINER_NAME}" -- \
+		su --pty \
+		--login "${CONTAINER_USER_NAME}" \
+		--command "${COMMANDS}"
+}
+
+unmount_disk(){
+	incus config device remove \
+		"${CONTAINER_NAME}" "${WORKDIR}" \
+		--quiet
+}
+
+main(){
+	# mount_disk
+	run_command
+}
+
+main "${0}"
+
+# trap 'unmount_disk' EXIT INT QUIT TERM HUP
